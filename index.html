@@ -1,181 +1,625 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Candy Crush Clone</title>
-<style>
-    :root{
-        --size:60px;               /* one tile size */
-        --gap:2px;                 /* grid gap      */
-        --grid:8;                  /* width/height  */
-        --colors:red,orange,yellow,green,blue,purple;
-    }
-    *{box-sizing:border-box;margin:0}
-    body{
-        display:flex;flex-direction:column;align-items:center;
-        font-family:system-ui,Arial,sans-serif;background:#222;color:#fff;height:100vh;
-        justify-content:center;gap:20px;overflow:hidden
-    }
-    h1{letter-spacing:2px;font-size:2rem}
-    #score{font-weight:bold}
-    .grid{
-        display:grid;
-        grid-template-columns:repeat(var(--grid),var(--size));
-        grid-template-rows:repeat(var(--grid),var(--size));
-        gap:var(--gap);
-        background:#444;padding:var(--gap);border-radius:12px;
-        touch-action:none;          /* smoother mobile drags */
-    }
-    .square{
-        width:var(--size);height:var(--size);border-radius:12px;
-        cursor:grab;user-select:none;
-        transition:transform .15s
-    }
-    .square:active{cursor:grabbing;transform:scale(.9)}
-    button{
-        padding:.6em 1.4em;border:none;border-radius:8px;
-        background:#ff6b6b;color:#fff;font-weight:600;font-size:1rem;cursor:pointer
-    }
-    button:hover{background:#ff8787}
-</style>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Candy Crush Clone - Working</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Arial', sans-serif;
+            background: linear-gradient(135deg, #ff9a9e, #fecfef, #ffd6cc);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            user-select: none;
+            padding: 20px;
+        }
+
+        .game-container {
+            background: rgba(255, 255, 255, 0.95);
+            border-radius: 20px;
+            padding: 20px;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
+            max-width: 500px;
+            width: 100%;
+        }
+
+        h1 {
+            text-align: center;
+            font-size: 2.5rem;
+            background: linear-gradient(45deg, #ff6b6b, #4ecdc4, #45b7d1);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            margin-bottom: 20px;
+        }
+
+        .game-info {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 20px;
+            padding: 15px;
+            background: linear-gradient(45deg, #667eea, #764ba2);
+            color: white;
+            border-radius: 10px;
+            font-weight: bold;
+        }
+
+        .game-board {
+            display: grid;
+            grid-template-columns: repeat(8, 1fr);
+            grid-template-rows: repeat(8, 1fr);
+            gap: 3px;
+            background: #8B4CB8;
+            padding: 10px;
+            border-radius: 15px;
+            aspect-ratio: 1;
+            max-width: 400px;
+            margin: 0 auto 20px;
+        }
+
+        .candy {
+            aspect-ratio: 1;
+            border-radius: 8px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.8rem;
+            font-weight: bold;
+            border: 2px solid rgba(255, 255, 255, 0.3);
+            transition: all 0.2s ease;
+            position: relative;
+        }
+
+        .candy:hover {
+            transform: scale(1.05);
+            z-index: 10;
+        }
+
+        .candy.selected {
+            transform: scale(1.1);
+            box-shadow: 0 0 20px rgba(255, 255, 255, 0.8);
+            border: 3px solid #fff;
+            z-index: 20;
+        }
+
+        .candy.matched {
+            animation: matchPulse 0.5s ease-in-out;
+        }
+
+        .candy.falling {
+            animation: fall 0.6s ease-in;
+        }
+
+        /* Candy Colors */
+        .red { background: linear-gradient(145deg, #ff6b6b, #ee5a52); }
+        .blue { background: linear-gradient(145deg, #4ecdc4, #44a08d); }
+        .green { background: linear-gradient(145deg, #96ceb4, #8FBC8F); }
+        .yellow { background: linear-gradient(145deg, #ffecd2, #fcb69f); }
+        .purple { background: linear-gradient(145deg, #a8edea, #667eea); }
+        .orange { background: linear-gradient(145deg, #ff9a9e, #fad0c4); }
+
+        @keyframes matchPulse {
+            0%, 100% { transform: scale(1); opacity: 1; }
+            50% { transform: scale(1.3); opacity: 0.7; }
+        }
+
+        @keyframes fall {
+            0% { transform: translateY(-100px); opacity: 0; }
+            100% { transform: translateY(0); opacity: 1; }
+        }
+
+        .controls {
+            display: flex;
+            gap: 10px;
+            justify-content: center;
+            flex-wrap: wrap;
+        }
+
+        .btn {
+            padding: 12px 24px;
+            border: none;
+            border-radius: 25px;
+            background: linear-gradient(45deg, #667eea, #764ba2);
+            color: white;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-size: 14px;
+        }
+
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4);
+        }
+
+        .message {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: rgba(0, 0, 0, 0.9);
+            color: white;
+            padding: 20px 40px;
+            border-radius: 15px;
+            font-size: 1.2rem;
+            font-weight: bold;
+            z-index: 1000;
+            display: none;
+        }
+
+        @media (max-width: 480px) {
+            .game-container { margin: 10px; padding: 15px; }
+            h1 { font-size: 2rem; }
+            .candy { font-size: 1.5rem; }
+            .game-board { max-width: 350px; }
+        }
+    </style>
 </head>
 <body>
-<h1>🍬 Candy Crush Clone</h1>
-<div>Score: <span id="score">0</span></div>
-<div class="grid" id="grid"></div>
-<button id="restart">New Game</button>
+    <div class="game-container">
+        <h1>🍭 Candy Crush 🍬</h1>
+        
+        <div class="game-info">
+            <div>Score: <span id="score">0</span></div>
+            <div>Level: <span id="level">1</span></div>
+            <div>Moves: <span id="moves">30</span></div>
+            <div>Target: <span id="target">1000</span></div>
+        </div>
 
-<script>
-(function(){
-    /* ----- CONFIG ----- */
-    const width   = 8;                         // grid is 8×8
-    const colors  = ['red','orange','yellow','green','blue','purple'];
-    const squares = [];                        // will hold divs
-    const grid    = document.getElementById('grid');
-    const scoreEl = document.getElementById('score');
-    let score     = 0;
-    let dragStart, dragEnd;
+        <div class="game-board" id="gameBoard"></div>
 
-    /* ----- INIT GRID ----- */
-    function createBoard(){
-        grid.innerHTML=''; squares.length=0; score=0; updateScore(0);
-        for(let i=0;i<width*width;i++){
-            const square=document.createElement('div');
-            square.setAttribute('draggable',true);
-            square.setAttribute('id',i);
-            const color=randomColor();
-            square.style.background=color;
-            square.classList.add('square');
-            grid.appendChild(square);
-            squares.push(square);
+        <div class="controls">
+            <button class="btn" onclick="newGame()">🎮 New Game</button>
+            <button class="btn" onclick="shuffleBoard()">🔄 Shuffle</button>
+            <button class="btn" onclick="showHint()">💡 Hint</button>
+        </div>
+    </div>
+
+    <div class="message" id="message"></div>
+
+    <script>
+        // Game variables
+        const BOARD_SIZE = 8;
+        const CANDY_TYPES = [
+            { symbol: '🔴', class: 'red' },
+            { symbol: '🔵', class: 'blue' },
+            { symbol: '🟢', class: 'green' },
+            { symbol: '🟡', class: 'yellow' },
+            { symbol: '🟣', class: 'purple' },
+            { symbol: '🟠', class: 'orange' }
+        ];
+
+        let board = [];
+        let score = 0;
+        let level = 1;
+        let moves = 30;
+        let target = 1000;
+        let selectedCandy = null;
+        let gameActive = true;
+        let isProcessing = false;
+
+        // Initialize game
+        function initGame() {
+            createBoard();
+            renderBoard();
+            updateUI();
         }
-    }
 
-    /* ----- HELPERS ----- */
-    const randomColor=()=>colors[Math.floor(Math.random()*colors.length)];
-    const updateScore=inc=>{score+=inc;scoreEl.textContent=score};
-
-    /* ----- DRAG EVENTS ----- */
-    squaresEvents();
-    function squaresEvents(){
-        grid.addEventListener('dragstart',e=>{
-            if(!e.target.classList.contains('square'))return;
-            dragStart=e.target;
-            dragEnd=null;
-        });
-        grid.addEventListener('dragover',e=>e.preventDefault());
-        grid.addEventListener('drop',e=>{
-            if(!e.target.classList.contains('square'))return;
-            dragEnd=e.target;
-        });
-        grid.addEventListener('dragend',()=>{
-            if(!dragEnd)return;
-            const startId=parseInt(dragStart.id);
-            const endId  =parseInt(dragEnd.id);
-            const validMoves=[startId-1,startId+1,startId-width,startId+width];
-            if(validMoves.includes(endId)){
-                swapColors(dragStart,dragEnd);
-                const matchFound=checkMatches();
-                if(!matchFound)swapColors(dragStart,dragEnd); // revert
-            }
-            dragStart=dragEnd=null;
-        });
-    }
-
-    function swapColors(el1,el2){
-        const temp=el1.style.background;
-        el1.style.background=el2.style.background;
-        el2.style.background=temp;
-    }
-
-    /* ----- MATCH CHECKERS ----- */
-    function checkMatches(){
-        let matched=false;
-        // check rows of 4
-        for(let i=0;i<64;i++){
-            const rowEnd=[5,6,7,13,14,15,21,22,23,29,30,31,37,38,39,45,46,47,53,54,55];
-            if(rowEnd.includes(i))continue;
-            const row=[i,i+1,i+2,i+3];
-            matched|=colorMatch(row,4);
-        }
-        // check columns of 4
-        for(let i=0;i<32;i++){
-            const col=[i,i+width,i+width*2,i+width*3];
-            matched|=colorMatch(col,4);
-        }
-        // rows of 3
-        for(let i=0;i<64;i++){
-            const rowEnd=[6,7,14,15,22,23,30,31,38,39,46,47,54,55];
-            if(rowEnd.includes(i))continue;
-            const row=[i,i+1,i+2];
-            matched|=colorMatch(row,3);
-        }
-        // columns of 3
-        for(let i=0;i<40;i++){
-            const col=[i,i+width,i+width*2];
-            matched|=colorMatch(col,3);
-        }
-        if(matched)setTimeout(dropCandies,200);
-        return matched;
-    }
-
-    function colorMatch(indices,len){
-        const firstColor=squares[indices[0]].style.background;
-        if(firstColor==='')return false;
-        if(indices.every(idx=>squares[idx].style.background===firstColor)){
-            indices.forEach(idx=>squares[idx].style.background='');
-            updateScore(len);
-            return true;
-        }
-        return false;
-    }
-
-    /* ----- DROP & REPLACE ----- */
-    function dropCandies(){
-        for(let i=55;i>=0;i--){
-            if(squares[i+width].style.background===''){
-                squares[i+width].style.background=squares[i].style.background;
-                squares[i].style.background='';
+        // Create the game board
+        function createBoard() {
+            board = [];
+            for (let row = 0; row < BOARD_SIZE; row++) {
+                board[row] = [];
+                for (let col = 0; col < BOARD_SIZE; col++) {
+                    let candy;
+                    do {
+                        candy = getRandomCandy();
+                    } while (wouldCreateMatch(row, col, candy));
+                    board[row][col] = candy;
+                }
             }
         }
-        // top row: generate new candies
-        for(let i=0;i<width;i++){
-            if(squares[i].style.background===''){
-                squares[i].style.background=randomColor();
+
+        // Get random candy type
+        function getRandomCandy() {
+            return CANDY_TYPES[Math.floor(Math.random() * CANDY_TYPES.length)];
+        }
+
+        // Check if placing a candy would create an immediate match
+        function wouldCreateMatch(row, col, candy) {
+            // Check horizontal
+            let horizontalCount = 1;
+            for (let c = col - 1; c >= 0 && board[row][c] && board[row][c].symbol === candy.symbol; c--) {
+                horizontalCount++;
+            }
+            for (let c = col + 1; c < BOARD_SIZE && board[row][c] && board[row][c].symbol === candy.symbol; c++) {
+                horizontalCount++;
+            }
+
+            // Check vertical
+            let verticalCount = 1;
+            for (let r = row - 1; r >= 0 && board[r][col] && board[r][col].symbol === candy.symbol; r--) {
+                verticalCount++;
+            }
+            for (let r = row + 1; r < BOARD_SIZE && board[r][col] && board[r][col].symbol === candy.symbol; r++) {
+                verticalCount++;
+            }
+
+            return horizontalCount >= 3 || verticalCount >= 3;
+        }
+
+        // Render the board
+        function renderBoard() {
+            const gameBoard = document.getElementById('gameBoard');
+            gameBoard.innerHTML = '';
+
+            for (let row = 0; row < BOARD_SIZE; row++) {
+                for (let col = 0; col < BOARD_SIZE; col++) {
+                    const candyElement = document.createElement('div');
+                    candyElement.className = `candy ${board[row][col].class}`;
+                    candyElement.textContent = board[row][col].symbol;
+                    candyElement.dataset.row = row;
+                    candyElement.dataset.col = col;
+                    candyElement.addEventListener('click', () => handleCandyClick(row, col));
+                    gameBoard.appendChild(candyElement);
+                }
             }
         }
-        // look for new matches
-        setTimeout(checkMatches,100);
-    }
 
-    /* ----- GAME LOOP ----- */
-    createBoard();
-    setInterval(checkMatches,150);
+        // Handle candy click
+        function handleCandyClick(row, col) {
+            if (!gameActive || isProcessing) return;
 
-    /* ----- RESTART ----- */
-    document.getElementById('restart').onclick=createBoard;
-})();
-</script>
+            const clickedElement = document.querySelector(`[data-row="${row}"][data-col="${col}"]`);
+
+            if (selectedCandy === null) {
+                // First selection
+                selectedCandy = { row, col };
+                clickedElement.classList.add('selected');
+            } else {
+                // Second selection
+                const prevSelected = document.querySelector('.selected');
+                if (prevSelected) prevSelected.classList.remove('selected');
+
+                if (selectedCandy.row === row && selectedCandy.col === col) {
+                    // Clicked same candy - deselect
+                    selectedCandy = null;
+                    return;
+                }
+
+                if (areAdjacent(selectedCandy.row, selectedCandy.col, row, col)) {
+                    // Valid move - attempt swap
+                    attemptSwap(selectedCandy.row, selectedCandy.col, row, col);
+                } else {
+                    // Invalid move - select new candy
+                    selectedCandy = { row, col };
+                    clickedElement.classList.add('selected');
+                }
+            }
+        }
+
+        // Check if two positions are adjacent
+        function areAdjacent(row1, col1, row2, col2) {
+            const rowDiff = Math.abs(row1 - row2);
+            const colDiff = Math.abs(col1 - col2);
+            return (rowDiff === 1 && colDiff === 0) || (rowDiff === 0 && colDiff === 1);
+        }
+
+        // Attempt to swap two candies
+        function attemptSwap(row1, col1, row2, col2) {
+            isProcessing = true;
+            
+            // Swap candies
+            const temp = board[row1][col1];
+            board[row1][col1] = board[row2][col2];
+            board[row2][col2] = temp;
+
+            // Check for matches
+            const matches = findAllMatches();
+            
+            if (matches.length > 0) {
+                // Valid move
+                moves--;
+                selectedCandy = null;
+                renderBoard();
+                updateUI();
+                
+                setTimeout(() => {
+                    processMatches();
+                }, 300);
+            } else {
+                // Invalid move - swap back
+                const temp = board[row1][col1];
+                board[row1][col1] = board[row2][col2];
+                board[row2][col2] = temp;
+                
+                selectedCandy = null;
+                renderBoard();
+                showMessage('No matches found!');
+                isProcessing = false;
+            }
+        }
+
+        // Find all matches on the board
+        function findAllMatches() {
+            const matches = [];
+            const matchedPositions = new Set();
+
+            // Find horizontal matches
+            for (let row = 0; row < BOARD_SIZE; row++) {
+                let count = 1;
+                let currentSymbol = board[row][0].symbol;
+                
+                for (let col = 1; col < BOARD_SIZE; col++) {
+                    if (board[row][col].symbol === currentSymbol) {
+                        count++;
+                    } else {
+                        if (count >= 3) {
+                            for (let i = col - count; i < col; i++) {
+                                matchedPositions.add(`${row}-${i}`);
+                            }
+                        }
+                        count = 1;
+                        currentSymbol = board[row][col].symbol;
+                    }
+                }
+                
+                if (count >= 3) {
+                    for (let i = BOARD_SIZE - count; i < BOARD_SIZE; i++) {
+                        matchedPositions.add(`${row}-${i}`);
+                    }
+                }
+            }
+
+            // Find vertical matches
+            for (let col = 0; col < BOARD_SIZE; col++) {
+                let count = 1;
+                let currentSymbol = board[0][col].symbol;
+                
+                for (let row = 1; row < BOARD_SIZE; row++) {
+                    if (board[row][col].symbol === currentSymbol) {
+                        count++;
+                    } else {
+                        if (count >= 3) {
+                            for (let i = row - count; i < row; i++) {
+                                matchedPositions.add(`${i}-${col}`);
+                            }
+                        }
+                        count = 1;
+                        currentSymbol = board[row][col].symbol;
+                    }
+                }
+                
+                if (count >= 3) {
+                    for (let i = BOARD_SIZE - count; i < BOARD_SIZE; i++) {
+                        matchedPositions.add(`${i}-${col}`);
+                    }
+                }
+            }
+
+            // Convert to array format
+            matchedPositions.forEach(pos => {
+                const [row, col] = pos.split('-').map(Number);
+                matches.push({ row, col });
+            });
+
+            return matches;
+        }
+
+        // Process matches and update score
+        function processMatches() {
+            const matches = findAllMatches();
+            
+            if (matches.length === 0) {
+                isProcessing = false;
+                checkGameEnd();
+                return;
+            }
+
+            // Add visual effect to matched candies
+            matches.forEach(({ row, col }) => {
+                const element = document.querySelector(`[data-row="${row}"][data-col="${col}"]`);
+                if (element) {
+                    element.classList.add('matched');
+                }
+            });
+
+            // Calculate score
+            const points = matches.length * 50;
+            score += points;
+            showMessage(`+${points} points!`);
+
+            // Remove matches after animation
+            setTimeout(() => {
+                removeMatches(matches);
+                dropCandies();
+                fillEmptySpaces();
+                renderBoard();
+                updateUI();
+
+                // Check for cascade matches
+                setTimeout(() => {
+                    processMatches();
+                }, 300);
+            }, 500);
+        }
+
+        // Remove matched candies
+        function removeMatches(matches) {
+            matches.forEach(({ row, col }) => {
+                board[row][col] = null;
+            });
+        }
+
+        // Drop candies down
+        function dropCandies() {
+            for (let col = 0; col < BOARD_SIZE; col++) {
+                const candies = [];
+                
+                // Collect non-null candies from bottom to top
+                for (let row = BOARD_SIZE - 1; row >= 0; row--) {
+                    if (board[row][col] !== null) {
+                        candies.push(board[row][col]);
+                    }
+                }
+
+                // Clear column
+                for (let row = 0; row < BOARD_SIZE; row++) {
+                    board[row][col] = null;
+                }
+
+                // Place candies from bottom
+                for (let i = 0; i < candies.length; i++) {
+                    board[BOARD_SIZE - 1 - i][col] = candies[i];
+                }
+            }
+        }
+
+        // Fill empty spaces with new candies
+        function fillEmptySpaces() {
+            for (let row = 0; row < BOARD_SIZE; row++) {
+                for (let col = 0; col < BOARD_SIZE; col++) {
+                    if (board[row][col] === null) {
+                        board[row][col] = getRandomCandy();
+                    }
+                }
+            }
+        }
+
+        // Update UI elements
+        function updateUI() {
+            document.getElementById('score').textContent = score;
+            document.getElementById('level').textContent = level;
+            document.getElementById('moves').textContent = moves;
+            document.getElementById('target').textContent = target;
+
+            // Check level up
+            if (score >= target) {
+                level++;
+                target = level * 1000;
+                moves += 20;
+                showMessage(`🎉 Level ${level}! 🎉`);
+            }
+        }
+
+        // Check game end conditions
+        function checkGameEnd() {
+            if (moves <= 0) {
+                if (score >= target) {
+                    showMessage('🎉 Level Complete! 🎉');
+                } else {
+                    showMessage('💀 Game Over! 💀');
+                    gameActive = false;
+                }
+            }
+        }
+
+        // Show temporary message
+        function showMessage(text) {
+            const messageEl = document.getElementById('message');
+            messageEl.textContent = text;
+            messageEl.style.display = 'block';
+            
+            setTimeout(() => {
+                messageEl.style.display = 'none';
+            }, 2000);
+        }
+
+        // Start new game
+        function newGame() {
+            score = 0;
+            level = 1;
+            moves = 30;
+            target = 1000;
+            gameActive = true;
+            isProcessing = false;
+            selectedCandy = null;
+            initGame();
+        }
+
+        // Shuffle board
+        function shuffleBoard() {
+            if (moves <= 1) return;
+            
+            moves--;
+            const allCandies = [];
+            
+            // Collect all candies
+            for (let row = 0; row < BOARD_SIZE; row++) {
+                for (let col = 0; col < BOARD_SIZE; col++) {
+                    allCandies.push(board[row][col]);
+                }
+            }
+
+            // Shuffle array
+            for (let i = allCandies.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                [allCandies[i], allCandies[j]] = [allCandies[j], allCandies[i]];
+            }
+
+            // Redistribute
+            let index = 0;
+            for (let row = 0; row < BOARD_SIZE; row++) {
+                for (let col = 0; col < BOARD_SIZE; col++) {
+                    board[row][col] = allCandies[index++];
+                }
+            }
+
+            renderBoard();
+            updateUI();
+            showMessage('Board shuffled!');
+        }
+
+        // Show hint
+        function showHint() {
+            for (let row = 0; row < BOARD_SIZE; row++) {
+                for (let col = 0; col < BOARD_SIZE; col++) {
+                    // Check all adjacent positions
+                    const adjacents = [
+                        [row - 1, col], [row + 1, col],
+                        [row, col - 1], [row, col + 1]
+                    ];
+
+                    for (const [newRow, newCol] of adjacents) {
+                        if (newRow >= 0 && newRow < BOARD_SIZE && 
+                            newCol >= 0 && newCol < BOARD_SIZE) {
+                            
+                            // Simulate swap
+                            const temp = board[row][col];
+                            board[row][col] = board[newRow][newCol];
+                            board[newRow][newCol] = temp;
+
+                            if (findAllMatches().length > 0) {
+                                // Restore and show hint
+                                board[newRow][newCol] = board[row][col];
+                                board[row][col] = temp;
+                                
+                                const element = document.querySelector(`[data-row="${row}"][data-col="${col}"]`);
+                                element.style.animation = 'matchPulse 1s ease-in-out 3';
+                                return;
+                            }
+
+                            // Restore
+                            board[newRow][newCol] = board[row][col];
+                            board[row][col] = temp;
+                        }
+                    }
+                }
+            }
+            showMessage('No hints available!');
+        }
+
+        // Initialize game when page loads
+        window.addEventListener('load', initGame);
+    </script>
 </body>
 </html>
